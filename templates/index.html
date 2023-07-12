@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+
+{% block title %}
+Stonks
+{% endblock %}
+
+{% block main %}
+<div class="mb-3">
+    <table>
+        <thead>
+            <tr>
+                <th>Stocks</th>
+                <th>Shares</th>
+                <th>Price</th>
+                <th>Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in data %}
+            <tr>
+                <td>{{data.stock}}</td>
+                <td>{{data.number}}</td>
+                <td>{{data.value | usd }}</td>
+                <td>{{data.total_value | usd }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td></td>
+                <td></td>
+                <td> CASH: </td>
+                <td id="cash">{{cash}}</td>
+            </tr>
+            <tr>
+                <td></td>
+                <td></td>
+                <td>TOTAL: </td>
+                <td id="total">{{sum}}</td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+{% endblock %}

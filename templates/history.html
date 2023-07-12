@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block title %}
+History
+{% endblock %}
+
+{% block main %}
+<div class="mb-3">
+    <table>
+        <tr>
+            <th>Date</th>
+            <th>Transaction Type</th>
+            <th>Company</th>
+            <th>Shares</th>
+            <th>Price</th>
+        </tr>
+        {% for transactions in transactions %}
+        <tr>
+            <td>{{transactions.date}}</td>
+            <td>{{transactions.type}}</td>
+            <td>{{transactions.company}}</td>
+            <td>{{transactions.shares}}</td>
+            <td>{{transactions.total_cost | usd }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
