@@ -1,6 +1,6 @@
 import os
 
-from datetime import datetime
+
 from cs50 import SQL
 from flask import Flask, flash, redirect, render_template, request, session
 from flask_session import Session
@@ -60,62 +60,33 @@ def buy():
         stock_quote = request.form.get("symbol")
 
         #check for errors
-        if stock_quote.isalpha() == False:
-            return apology("Invalid symbol")
-        elif len(stock_quote) == 0:
-            return apology("Invalid symbol")
+        mylogic.stockcheck1(stock_quote)
 
         #acquire stock info, number of shares, the db, the cost
         stock_dic = lookup(stock_quote)
         share_num = request.form.get("shares")
 
-        if share_num.isdigit() == False:
-            return apology("Invalid numbers")
-        elif int(share_num) == ValueError:
-            return apology("Whole numbers only")
-        elif int(share_num) < 1:
-            return apology("No stocks selected")
+        #check for errors in number of shares
+        mylogic.sharenum_check(share_num)
 
-        rows = db.execute("SELECT * FROM users WHERE id = ?",
-                          session["user_id"])
-        if rows[0] == None:
-            return apology("Database error")
+        #define database
+        rows = mydb.rows(db, session["user_id"])
+        
+        #check db if exists
+        mylogic.norows(rows)
 
-        cost = stock_dic["price"] * float(share_num)  #float defaults
-        now = datetime.now()
-        time = now.strftime("%d/%m/%Y %H:%M:%S")
-        buyorsell = "buy"
+        cost, time, buyorsell = mydb.buy_variables(stock_dic, share_num)
 
         #account for misspell of stock and not enough funds
-        if stock_dic == None:
-            return apology("No stock of that code found", 400)
-            #TODO:4- L/M set limits in the html itself
-        elif cost > rows[0]["cash"]:
-            return apology("Not enough money to purchase", 400)
-        else:
-            remainder = rows[0]["cash"] - cost
-            db.execute("UPDATE users SET cash=? WHERE id = ?", remainder,
-                       session["user_id"])
-            db.execute(
-                "INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
-                session["user_id"], str(time), stock_quote.upper(), share_num,
-                cost, buyorsell)
-            asset = db.execute(
-                "SELECT * FROM assets WHERE user_id = ? AND stock = ?",
-                session["user_id"], stock_quote.upper())
-            if len(asset) == 0:
-                db.execute(
-                    "INSERT INTO assets (user_id, stock, number, value, total_value) VALUES (?, ?, ?, ?, ?)",
-                    session["user_id"], stock_quote.upper(), share_num,
-                    stock_dic["price"], cost)
-            else:
-                number = asset[0]['number'] + int(share_num)
-                total_value = stock_dic["price"] * number
-                db.execute(
-                    "UPDATE assets SET number = ?, value = ?, total_value = ? WHERE user_id = ? and stock = ?",
-                    number, stock_dic["price"], total_value,
-                    session["user_id"], stock_quote.upper())
-            return redirect("/")
+        mylogic.stockcheck2(stock_dic, cost, rows)
+
+        #calculate assets
+        asset = mydb.buy_main(db, rows, session["user_id"], time, stock_quote, share_num, cost, buyorsell)
+        
+        #update db
+        mydb.buy_update(asset, db, session["user_id"], stock_quote, share_num, stock_dic, cost)
+        
+        return redirect("/")
     # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("buy.html")
@@ -126,9 +97,7 @@ def buy():
 def history():
     """Show history of transactions"""
     if request.method == "GET":
-        transactions = db.execute(
-            "SELECT * FROM transactions WHERE user_id = ? ORDER BY id",
-            session["user_id"])
+        transactions = mydb.get_transactions(db, session["user_id"])
         return render_template("history.html", transactions=transactions)
 
 
