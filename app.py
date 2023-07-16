@@ -66,22 +66,27 @@ def buy():
         stock_quote = request.form.get("symbol")
 
         #check for errors
-        for x in stock_quote:
-            if x == ';' or "'":
-                return apology("Invalid symbols")
+        if stock_quote.isalpha() == False:
+            return apology("Invalid symbol")
+        elif len(stock_quote) == 0:
+            return apology("Invalid symbol")
 
         #acquire stock info, number of shares, the db, the cost
         stock_dic = lookup(stock_quote)
         share_num = request.form.get("shares")
 
-        #check if shares exist
-        if int(share_num) < 1:
-            return apology("No stocks selected")
-        elif share_num.isdigit() == True:
+        if share_num.isdigit() == False:
             return apology("Invalid numbers")
+        elif int(share_num) == ValueError:
+            return apology("Whole numbers only")
+        elif int(share_num) < 1:
+            return apology("No stocks selected")
 
         rows = db.execute("SELECT * FROM users WHERE id = ?", session["user_id"])
-        cost = stock_dic["price"] * float(share_num)
+        if rows[0] ==None:
+            return apology("Database error")
+
+        cost = stock_dic["price"] * float(share_num) #float defaults
         now = datetime.now()
         time = now.strftime("%d/%m/%Y %H:%M:%S")
         buyorsell = "buy"
@@ -192,6 +197,10 @@ def register():
         # Ensure username was submitted
         if not request.form.get("username"):
             return apology("must provide username")
+        elif not request.form.get("password"):
+            return apology("must provide password")
+        elif not request.form.get("confirmation"):
+            return apology("must provide confirmation")
 
         # Ensure passwords were long enough and accurate
         password1, password2 = request.form.get("password"), request.form.get("confirmation")
@@ -199,7 +208,7 @@ def register():
 
         if password1 != password2:
             return apology("Passwords do not match")
-        # elif len(password1) < 8 or len(password2) < 8:
+        # elif len(password1) < 8:
         #     return apology("Must provide a password at least 8 characters in length", 400)
 
         # Query database for username availability
@@ -227,20 +236,21 @@ def register():
 def sell():
     """Sell shares of stock"""
     if request.method == "POST":
-        stock_quote = request.form.get("stock").upper()
+        stock_quote = request.form.get("symbol").upper()
 
         #check for malignant errors
-        for x in stock_quote:
-            if x == ';' or "'":
-                return apology("Invalid symbols")
-                #stock_quote = stock_quote.replace(';', '')
+        if stock_quote.isalpha() == False:
+            return apology("Invalid symbol")
 
         stock_dic = lookup(stock_quote)
         share_num = request.form.get("shares")
-        if int(share_num) < 1:
-            return apology("No stocks selected")
-        elif share_num.isdigit() ==True:
+
+        if share_num.isdigit() == False:
             return apology("Invalid numbers")
+        elif int(share_num) == ValueError:
+            return apology("Whole numbers only")
+        elif int(share_num) < 1:
+            return apology("No stocks selected")
 
         rows = db.execute("SELECT * FROM users WHERE id = ?", session["user_id"])
         assets = db.execute("SELECT * FROM assets WHERE user_id = ? AND stock = ?", session["user_id"], stock_quote.upper())
