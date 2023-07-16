@@ -50,3 +50,42 @@ def get_transactions(db, user_id):
     db.execute(
             "SELECT * FROM transactions WHERE user_id = ? ORDER BY id",
             user_id)
+
+def user_input(db, username, hash_pass):
+    db.execute("INSERT INTO users (username, hash) VALUES (?, ?)",
+                username,
+                hash_pass)
+    rows = db.execute("SELECT * FROM users WHERE username = ?",
+                        username)
+    return rows
+
+def sell_variables(db, user_id, stock_quote, stock_dic, share_num):
+    rows = db.execute("SELECT * FROM users WHERE id = ?",
+                        user_id)
+    assets = db.execute(
+        "SELECT * FROM assets WHERE user_id = ? AND stock = ?",
+        user_id, stock_quote.upper())
+    cost = stock_dic["price"] * float(share_num)
+    buyorsell = "sell"
+    now = datetime.now()
+    time = now.strftime("%d/%m/%Y %H:%M:%S")
+    return rows, assets, cost, buyorsell, time
+
+def sell_main(number, db, stock_dic, total_value, user_id, stock_quote):
+    if number > 0:
+        db.execute(
+            "UPDATE assets SET number = ?, value = ?, total_value = ? WHERE user_id = ? AND stock = ?",
+            number, stock_dic["price"], total_value,
+            user_id, stock_quote.upper())
+    else:
+        db.execute(
+            "DELETE FROM assets WHERE user_id = ? AND stock = ?",
+            user_id, stock_quote.upper())
+        
+def sell_update(db, user_id, gains, time, stock_quote, share_num, cost, buyorsell):
+    db.execute("UPDATE users SET cash=? WHERE id = ?", gains,
+                user_id)
+    db.execute(
+        "INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
+        user_id, time, stock_quote.upper(), share_num, cost,
+        buyorsell)

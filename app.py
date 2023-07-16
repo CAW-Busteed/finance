@@ -156,16 +156,11 @@ def quote():
     """Get stock quote."""
     if request.method == "POST":
         stock_quote = request.form.get("symbol")
-        if len(stock_quote) == 0:
-            return apology("No stock inputted")
-        elif lookup(stock_quote) == None:
-            return apology("No stock of that code found")
-        else:
-            stock_dic = lookup(stock_quote)
-            return render_template("quoted.html",
-                                   name=stock_dic["name"],
-                                   symbol=stock_dic["symbol"],
-                                   price=usd(stock_dic["price"]))
+        stock_dic = mylogic.getquote(stock_quote)
+        return render_template("quoted.html",
+                                name=stock_dic["name"],
+                                symbol=stock_dic["symbol"],
+                                price=usd(stock_dic["price"]))
 
     # User reached route via GET (as by clicking a link or via redirect)
     else:
@@ -177,35 +172,29 @@ def register():
     """Register user"""
     if request.method == "POST":
 
-        # Ensure username was submitted
+        # Ensure fileds were submitted
         if not request.form.get("username"):
             return apology("must provide username")
         elif not request.form.get("password"):
             return apology("must provide password")
         elif not request.form.get("confirmation"):
             return apology("must provide confirmation")
+        
+        username = request.form.get("username")
 
         # Ensure passwords were long enough and accurate
         password1, password2 = request.form.get("password"), request.form.get(
             "confirmation")
-
-        if password1 != password2:
-            return apology("Passwords do not match")
-        # elif len(password1) < 8:
-        #     return apology("Must provide a password at least 8 characters in length", 400)
+        mylogic.pass_compare(password1, password2)
+        #mylogic.pass_parameters(password1)
 
         # Query database for username availability
-        rows = db.execute("SELECT * FROM users WHERE username = ?",
-                          request.form.get("username"))
-        if len(rows) > 0:
-            return apology("username unavailable")
+        rows = mydb.rows(db, username)
+        mylogic.username_avail(rows)
 
-        #input user data in user table and login
-        db.execute("INSERT INTO users (username, hash) VALUES (?, ?)",
-                   request.form.get("username"),
-                   generate_password_hash(request.form.get("password")))
-        rows = db.execute("SELECT * FROM users WHERE username = ?",
-                          request.form.get("username"))
+        #input user data in user table
+        hash_pass = generate_password_hash(password1)
+        mydb.user_input(db, username, hash_pass)
 
         #user has logged in
         session["user_id"] = rows[0]["id"]
@@ -226,60 +215,26 @@ def sell():
         stock_quote = request.form.get("symbol").upper()
 
         #check for malignant errors
-        if stock_quote.isalpha() == False:
-            return apology("Invalid symbol")
+        mylogic.symbol_check(stock_quote)
 
         stock_dic = lookup(stock_quote)
         share_num = request.form.get("shares")
+        mylogic.valid_form(share_num)
 
-        if share_num.isdigit() == False:
-            return apology("Invalid numbers")
-        elif int(share_num) == ValueError:
-            return apology("Whole numbers only")
-        elif int(share_num) < 1:
-            return apology("No stocks selected")
-
-        rows = db.execute("SELECT * FROM users WHERE id = ?",
-                          session["user_id"])
-        assets = db.execute(
-            "SELECT * FROM assets WHERE user_id = ? AND stock = ?",
-            session["user_id"], stock_quote.upper())
-        cost = stock_dic["price"] * float(share_num)
-        buyorsell = "sell"
-        now = datetime.now()
-        time = now.strftime("%d/%m/%Y %H:%M:%S")
+        rows, assets, cost, buyorsell, time = mydb.sell_variables(db, session["user_id"], stock_quote, stock_dic, share_num)
 
         #account for misspell of stock and nonexistence in portfolio
-        if stock_dic == None:
-            return apology("No stock of that code found")
-        elif assets == None:
-            return apology("Stock not found in portfolio")
-        elif int(share_num) > assets[0]["number"]:
-            return apology("Sold more stock than user possesses")
-        #TODO:4- L/M set limits in the html itself
-        else:
-            gains = rows[0]["cash"] + cost
-            number = assets[0]["number"] - int(share_num)
-            total_value = stock_dic["price"] * number
+        mylogic.error_catch(stock_dic, assets, share_num)
+        
+        gains = rows[0]["cash"] + cost
+        number = assets[0]["number"] - int(share_num)
+        total_value = stock_dic["price"] * number
 
-            #delete fromassets if there are some stocks left.
-            if number > 0:
-                db.execute(
-                    "UPDATE assets SET number = ?, value = ?, total_value = ? WHERE user_id = ? AND stock = ?",
-                    number, stock_dic["price"], total_value,
-                    session["user_id"], stock_quote.upper())
-            else:
-                db.execute(
-                    "DELETE FROM assets WHERE user_id = ? AND stock = ?",
-                    session["user_id"], stock_quote.upper())
+        #delete from assets if there are some stocks left.
+        mydb.sell_main(number, db, stock_dic, total_value, session["user_id"], stock_quote)
 
-            #update cash and history
-            db.execute("UPDATE users SET cash=? WHERE id = ?", gains,
-                       session["user_id"])
-            db.execute(
-                "INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
-                session["user_id"], time, stock_quote.upper(), share_num, cost,
-                buyorsell)
-            return redirect("/")
+        #update cash and history
+        mydb.sell_update(db, session["user_id"], gains, time, stock_quote, share_num, cost, buyorsell)
+        return redirect("/")
     else:
         return render_template("sell.html")
