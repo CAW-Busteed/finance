@@ -9,6 +9,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from helpers import apology, login_required, lookup, usd
 
+import mydb
+import mylogic
+
 # Configure application
 app = Flask(__name__)
 
@@ -36,25 +39,16 @@ def after_request(response):
 @app.route("/")
 @login_required
 def index():
-     """Show portfolio of stocks"""
+    """Show portfolio of stocks"""
     # User reached route via GET
-     if request.method == "GET":
-        data = db.execute("SELECT * FROM assets WHERE user_id = ?", session["user_id"])
-        user_cash = db.execute("SELECT cash FROM users WHERE id = ?", session["user_id"])
-        gross_value = db.execute("SELECT total_value FROM assets WHERE user_id = ?", session["user_id"])
-        total = 0
-        x=0
-        if gross_value == []:
-            total = float(user_cash[0]["cash"])
-        elif len(gross_value) == 1:
-            total = gross_value[0]["total_value"] + user_cash[0]["cash"]
-        else:
-            while x < len(gross_value):
-                total += gross_value[x]["total_value"]
-                x += 1
-            total += user_cash[0]["cash"]
-        return render_template("index.html", data = data, cash=usd(user_cash[0]["cash"]), sum= usd(total))
-     #Else: where the sell all stock button would work
+    if request.method == "GET":
+        data, user_cash, gross_value = mydb.dostuff(db, session['user_id'])
+        total = mylogic.dostuff2(gross_value, user_cash)
+        return render_template("index.html",
+                               data=data,
+                               cash=usd(user_cash[0]["cash"]),
+                               sum=usd(total))
+    #Else: where the sell all stock button would work
 
 
 @app.route("/buy", methods=["GET", "POST"])
@@ -82,11 +76,12 @@ def buy():
         elif int(share_num) < 1:
             return apology("No stocks selected")
 
-        rows = db.execute("SELECT * FROM users WHERE id = ?", session["user_id"])
-        if rows[0] ==None:
+        rows = db.execute("SELECT * FROM users WHERE id = ?",
+                          session["user_id"])
+        if rows[0] == None:
             return apology("Database error")
 
-        cost = stock_dic["price"] * float(share_num) #float defaults
+        cost = stock_dic["price"] * float(share_num)  #float defaults
         now = datetime.now()
         time = now.strftime("%d/%m/%Y %H:%M:%S")
         buyorsell = "buy"
@@ -99,28 +94,42 @@ def buy():
             return apology("Not enough money to purchase", 400)
         else:
             remainder = rows[0]["cash"] - cost
-            db.execute("UPDATE users SET cash=? WHERE id = ?", remainder, session["user_id"])
-            db.execute("INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)", session["user_id"], str(time), stock_quote.upper(), share_num, cost, buyorsell)
-            asset = db.execute("SELECT * FROM assets WHERE user_id = ? AND stock = ?", session["user_id"], stock_quote.upper())
+            db.execute("UPDATE users SET cash=? WHERE id = ?", remainder,
+                       session["user_id"])
+            db.execute(
+                "INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
+                session["user_id"], str(time), stock_quote.upper(), share_num,
+                cost, buyorsell)
+            asset = db.execute(
+                "SELECT * FROM assets WHERE user_id = ? AND stock = ?",
+                session["user_id"], stock_quote.upper())
             if len(asset) == 0:
-                db.execute("INSERT INTO assets (user_id, stock, number, value, total_value) VALUES (?, ?, ?, ?, ?)", session["user_id"], stock_quote.upper(), share_num, stock_dic["price"], cost)
+                db.execute(
+                    "INSERT INTO assets (user_id, stock, number, value, total_value) VALUES (?, ?, ?, ?, ?)",
+                    session["user_id"], stock_quote.upper(), share_num,
+                    stock_dic["price"], cost)
             else:
-                number= asset[0]['number'] + int(share_num)
-                total_value= stock_dic["price"] * number
-                db.execute("UPDATE assets SET number = ?, value = ?, total_value = ? WHERE user_id = ? and stock = ?", number, stock_dic["price"], total_value, session["user_id"], stock_quote.upper())
+                number = asset[0]['number'] + int(share_num)
+                total_value = stock_dic["price"] * number
+                db.execute(
+                    "UPDATE assets SET number = ?, value = ?, total_value = ? WHERE user_id = ? and stock = ?",
+                    number, stock_dic["price"], total_value,
+                    session["user_id"], stock_quote.upper())
             return redirect("/")
     # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("buy.html")
+
 
 @app.route("/history")
 @login_required
 def history():
     """Show history of transactions"""
     if request.method == "GET":
-        transactions = db.execute("SELECT * FROM transactions WHERE user_id = ? ORDER BY id", session["user_id"])
+        transactions = db.execute(
+            "SELECT * FROM transactions WHERE user_id = ? ORDER BY id",
+            session["user_id"])
         return render_template("history.html", transactions=transactions)
-
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -142,10 +151,12 @@ def login():
             return apology("must provide password", 403)
 
         # Query database for username
-        rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        rows = db.execute("SELECT * FROM users WHERE username = ?",
+                          request.form.get("username"))
 
         # Ensure username exists and password is correct
-        if len(rows) != 1 or not check_password_hash(rows[0]["hash"], request.form.get("password")):
+        if len(rows) != 1 or not check_password_hash(
+                rows[0]["hash"], request.form.get("password")):
             return apology("invalid username and/or password", 403)
 
         # Remember which user has logged in
@@ -176,15 +187,18 @@ def quote():
     """Get stock quote."""
     if request.method == "POST":
         stock_quote = request.form.get("symbol")
-        if len(stock_quote)==0:
+        if len(stock_quote) == 0:
             return apology("No stock inputted")
         elif lookup(stock_quote) == None:
             return apology("No stock of that code found")
         else:
             stock_dic = lookup(stock_quote)
-            return render_template("quoted.html", name= stock_dic["name"], symbol= stock_dic["symbol"], price= usd(stock_dic["price"]))
+            return render_template("quoted.html",
+                                   name=stock_dic["name"],
+                                   symbol=stock_dic["symbol"],
+                                   price=usd(stock_dic["price"]))
 
-     # User reached route via GET (as by clicking a link or via redirect)
+    # User reached route via GET (as by clicking a link or via redirect)
     else:
         return render_template("quote.html")
 
@@ -203,8 +217,8 @@ def register():
             return apology("must provide confirmation")
 
         # Ensure passwords were long enough and accurate
-        password1, password2 = request.form.get("password"), request.form.get("confirmation")
-
+        password1, password2 = request.form.get("password"), request.form.get(
+            "confirmation")
 
         if password1 != password2:
             return apology("Passwords do not match")
@@ -212,13 +226,17 @@ def register():
         #     return apology("Must provide a password at least 8 characters in length", 400)
 
         # Query database for username availability
-        rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        rows = db.execute("SELECT * FROM users WHERE username = ?",
+                          request.form.get("username"))
         if len(rows) > 0:
             return apology("username unavailable")
 
         #input user data in user table and login
-        db.execute("INSERT INTO users (username, hash) VALUES (?, ?)", request.form.get("username"), generate_password_hash(request.form.get("password")))
-        rows = db.execute("SELECT * FROM users WHERE username = ?", request.form.get("username"))
+        db.execute("INSERT INTO users (username, hash) VALUES (?, ?)",
+                   request.form.get("username"),
+                   generate_password_hash(request.form.get("password")))
+        rows = db.execute("SELECT * FROM users WHERE username = ?",
+                          request.form.get("username"))
 
         #user has logged in
         session["user_id"] = rows[0]["id"]
@@ -252,10 +270,13 @@ def sell():
         elif int(share_num) < 1:
             return apology("No stocks selected")
 
-        rows = db.execute("SELECT * FROM users WHERE id = ?", session["user_id"])
-        assets = db.execute("SELECT * FROM assets WHERE user_id = ? AND stock = ?", session["user_id"], stock_quote.upper())
+        rows = db.execute("SELECT * FROM users WHERE id = ?",
+                          session["user_id"])
+        assets = db.execute(
+            "SELECT * FROM assets WHERE user_id = ? AND stock = ?",
+            session["user_id"], stock_quote.upper())
         cost = stock_dic["price"] * float(share_num)
-        buyorsell= "sell"
+        buyorsell = "sell"
         now = datetime.now()
         time = now.strftime("%d/%m/%Y %H:%M:%S")
 
@@ -269,18 +290,27 @@ def sell():
         #TODO:4- L/M set limits in the html itself
         else:
             gains = rows[0]["cash"] + cost
-            number= assets[0]["number"] - int(share_num)
-            total_value= stock_dic["price"] * number
+            number = assets[0]["number"] - int(share_num)
+            total_value = stock_dic["price"] * number
 
             #delete fromassets if there are some stocks left.
             if number > 0:
-                db.execute("UPDATE assets SET number = ?, value = ?, total_value = ? WHERE user_id = ? AND stock = ?", number, stock_dic["price"], total_value, session["user_id"], stock_quote.upper())
+                db.execute(
+                    "UPDATE assets SET number = ?, value = ?, total_value = ? WHERE user_id = ? AND stock = ?",
+                    number, stock_dic["price"], total_value,
+                    session["user_id"], stock_quote.upper())
             else:
-                db.execute("DELETE FROM assets WHERE user_id = ? AND stock = ?", session["user_id"], stock_quote.upper())
+                db.execute(
+                    "DELETE FROM assets WHERE user_id = ? AND stock = ?",
+                    session["user_id"], stock_quote.upper())
 
             #update cash and history
-            db.execute("UPDATE users SET cash=? WHERE id = ?", gains, session["user_id"])
-            db.execute("INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)", session["user_id"], time, stock_quote.upper(), share_num, cost, buyorsell)
+            db.execute("UPDATE users SET cash=? WHERE id = ?", gains,
+                       session["user_id"])
+            db.execute(
+                "INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
+                session["user_id"], time, stock_quote.upper(), share_num, cost,
+                buyorsell)
             return redirect("/")
     else:
         return render_template("sell.html")
