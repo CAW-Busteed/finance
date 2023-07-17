@@ -1,0 +1,4 @@
+id,username,hash,cash
+1,cedric1,pbkdf2:sha256:600000$xtaL6jQqqKZKgMxC$a16934fcb8f233967656230d68dcdc1cf4e06522763d0c21f9b1bc38afe35b7e,3953.65
+2,cedric2,pbkdf2:sha256:600000$GWP6AitYorNwwBXJ$ca4397f315d37b641e2acffb358d9bb30b5f92311cdf9ce8143ff008f245dd58,9553.4
+3,cedric5,pbkdf2:sha256:600000$MXed0pkeC0O3Fdo0$09e5cc495daf9e2a8c0f2ca3838585de25e03d888d6272102ded90082dbdaa5e,10000

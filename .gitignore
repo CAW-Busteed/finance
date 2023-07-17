@@ -1,3 +1,4 @@
 /__pycache__/
 /flask_session/
 /tests/__pycache__/
+/finance-test.db
