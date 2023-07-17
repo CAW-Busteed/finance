@@ -1,5 +1,6 @@
 from helpers import apology, login_required, lookup, usd
 
+
 def dostuff2(gross_value, user_cash):
     total = 0
     x = 0
@@ -14,11 +15,14 @@ def dostuff2(gross_value, user_cash):
         total += user_cash[0]["cash"]
     return total
 
+
 def stockcheck1(stock_quote):
     if stock_quote.isalpha() == False:
         return apology("Invalid symbol")
     elif len(stock_quote) == 0:
         return apology("Invalid symbol")
+    return True
+
 
 def sharenum_check(share_num):
     if share_num.isdigit() == False:
@@ -28,9 +32,11 @@ def sharenum_check(share_num):
     elif int(share_num) < 1:
         return apology("No stocks selected")
 
+
 def norows(rows):
     if rows[0] == None:
         return apology("Database error")
+
 
 def stockcheck2(stock_dic, cost, rows):
     if stock_dic == None:
@@ -38,7 +44,8 @@ def stockcheck2(stock_dic, cost, rows):
         #TODO:4- L/M set limits in the html itself
     elif cost > rows[0]["cash"]:
         return apology("Not enough money to purchase", 400)
-    
+
+
 def getquote(stock_quote):
     if len(stock_quote) == 0:
         return apology("No stock inputted")
@@ -48,6 +55,7 @@ def getquote(stock_quote):
         stock_dic = lookup(stock_quote)
         return stock_dic
 
+
 # def register():
 #     if not request.form.get("username"):
 #         return apology("must provide username")
@@ -56,22 +64,28 @@ def getquote(stock_quote):
 #     elif not request.form.get("confirmation"):
 #         return apology("must provide confirmation")
 
+
 def pass_compare(password1, password2):
     if password1 != password2:
         return apology("Passwords do not match")
 
+
 def pass_parameters(password):
     if len(password) < 8:
-        return apology("Must provide a password at least 8 characters in length")
+        return apology(
+            "Must provide a password at least 8 characters in length")
+
 
 def username_avail(rows):
     if len(rows) > 0:
         return apology("username unavailable")
-    
+
+
 def symbol_check(stock_quote):
     if stock_quote.isalpha() == False:
         return apology("Invalid symbol")
-    
+
+
 def valid_form(share_num):
     if share_num.isdigit() == False:
         return apology("Invalid numbers")
@@ -79,6 +93,7 @@ def valid_form(share_num):
         return apology("Whole numbers only")
     elif int(share_num) < 1:
         return apology("No stocks selected")
+
 
 def error_catch(stock_dic, assets, share_num):
     if stock_dic == None:
