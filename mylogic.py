@@ -31,11 +31,14 @@ def sharenum_check(share_num):
         return apology("Whole numbers only")
     elif int(share_num) < 1:
         return apology("No stocks selected")
+    return True
 
 
 def norows(rows):
     if rows[0] == None:
         return apology("Database error")
+    else:
+        return True
 
 
 def stockcheck2(stock_dic, cost, rows):
@@ -44,6 +47,8 @@ def stockcheck2(stock_dic, cost, rows):
         #TODO:4- L/M set limits in the html itself
     elif cost > rows[0]["cash"]:
         return apology("Not enough money to purchase", 400)
+    return True
+    
 
 
 def getquote(stock_quote):
@@ -68,22 +73,27 @@ def getquote(stock_quote):
 def pass_compare(password1, password2):
     if password1 != password2:
         return apology("Passwords do not match")
+    else:
+        return True
 
 
 def pass_parameters(password):
     if len(password) < 8:
         return apology(
             "Must provide a password at least 8 characters in length")
+    return True
 
 
 def username_avail(rows):
     if len(rows) > 0:
         return apology("username unavailable")
+    return True
 
 
 def symbol_check(stock_quote):
     if stock_quote.isalpha() == False:
         return apology("Invalid symbol")
+    return True
 
 
 def valid_form(share_num):
@@ -93,6 +103,7 @@ def valid_form(share_num):
         return apology("Whole numbers only")
     elif int(share_num) < 1:
         return apology("No stocks selected")
+    return True
 
 
 def error_catch(stock_dic, assets, share_num):
@@ -102,3 +113,4 @@ def error_catch(stock_dic, assets, share_num):
         return apology("Stock not found in portfolio")
     elif int(share_num) > assets[0]["number"]:
         return apology("Sold more stock than user possesses")
+    return True

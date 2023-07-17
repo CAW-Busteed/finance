@@ -10,6 +10,7 @@ def dostuff(db, user_id):
 def rows(db, user_id):
     db.execute("SELECT * FROM users WHERE id = ?",
                           user_id)
+    return True
 
 def buy_variables(stock_dic, share_num):
     cost = stock_dic["price"] * float(share_num)
@@ -45,11 +46,13 @@ def buy_update(asset, db, user_id, stock_quote, share_num, stock_dic, cost):
             "UPDATE assets SET number = ?, value = ?, total_value = ? WHERE user_id = ? and stock = ?",
             number, stock_dic["price"], total_value,
             user_id, stock_quote.upper())
+    return True
         
 def get_transactions(db, user_id):
     db.execute(
             "SELECT * FROM transactions WHERE user_id = ? ORDER BY id",
             user_id)
+    return True
 
 def user_input(db, username, hash_pass):
     db.execute("INSERT INTO users (username, hash) VALUES (?, ?)",
@@ -81,6 +84,7 @@ def sell_main(number, db, stock_dic, total_value, user_id, stock_quote):
         db.execute(
             "DELETE FROM assets WHERE user_id = ? AND stock = ?",
             user_id, stock_quote.upper())
+    return True
         
 def sell_update(db, user_id, gains, time, stock_quote, share_num, cost, buyorsell):
     db.execute("UPDATE users SET cash=? WHERE id = ?", gains,
@@ -89,3 +93,4 @@ def sell_update(db, user_id, gains, time, stock_quote, share_num, cost, buyorsel
         "INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
         user_id, time, stock_quote.upper(), share_num, cost,
         buyorsell)
+    return True
