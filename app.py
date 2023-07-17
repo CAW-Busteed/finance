@@ -216,7 +216,7 @@ def sell():
 
         stock_dic = lookup(stock_quote)
         share_num = request.form.get("shares")
-        mylogic.valid_form(share_num)
+        mylogic.sharenum_check(share_num)
 
         rows, assets, cost, buyorsell, time = mydb.sell_variables(db, session["user_id"], stock_quote, stock_dic, share_num)
 

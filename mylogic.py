@@ -96,16 +96,6 @@ def symbol_check(stock_quote):
     return True
 
 
-def valid_form(share_num):
-    if share_num.isdigit() == False:
-        return apology("Invalid numbers")
-    elif int(share_num) == ValueError:
-        return apology("Whole numbers only")
-    elif int(share_num) < 1:
-        return apology("No stocks selected")
-    return True
-
-
 def error_catch(stock_dic, assets, share_num):
     if stock_dic == None:
         return apology("No stock of that code found")
