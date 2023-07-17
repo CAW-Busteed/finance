@@ -52,7 +52,7 @@ def get_transactions(db, user_id):
     db.execute(
             "SELECT * FROM transactions WHERE user_id = ? ORDER BY id",
             user_id)
-    return True
+
 
 def user_input(db, username, hash_pass):
     db.execute("INSERT INTO users (username, hash) VALUES (?, ?)",
