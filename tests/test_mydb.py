@@ -1,5 +1,4 @@
 import os
-import mylogic
 import mydb
 import pytest
 from cs50 import SQL
@@ -30,9 +29,7 @@ def dbfixture(dbfile):
 
 
 def test_dostuff(dbfixture):
-    import pdb
-    pdb.set_trace()  # roy
-    # assert dostuff(db, user_id)
+    assert mydb.dostuff(dbfixture, user_id = 0)
 
 def add_transactions(dbfixture, id, time, quote, shares, cost, type):
    dbfixture.execute("INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
