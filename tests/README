@@ -1,0 +1,28 @@
+
+[export to csv]
+.header on
+.mode csv
+.output /tmp/users.csv
+SELECT * FROM users;
+.quit
+
+.header on
+.mode csv
+.output /tmp/assets.csv
+SELECT * FROM assets;
+.quit
+
+
+.header on
+.mode csv
+.output /tmp/transactions.csv
+SELECT * FROM transactions;
+.quit
+
+
+[import from csv]
+.mode csv
+.header on
+.import /home/roy/Downloads/Cedric/finance/tests/users.csv users
+.import /home/roy/Downloads/Cedric/finance/tests/assets.csv assets
+.import /home/roy/Downloads/Cedric/finance/tests/transactions.csv transactions

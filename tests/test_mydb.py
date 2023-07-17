@@ -23,6 +23,8 @@ def dbfixture(dbfile):
     db = SQL("sqlite:///finance-test.db")
     for cmd in cmds:
         db.execute(cmd)
+
+    # create some test rows for each table with inserts.
     return db
 
 
