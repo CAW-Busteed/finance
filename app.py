@@ -172,7 +172,7 @@ def register():
     """Register user"""
     if request.method == "POST":
 
-        # Ensure fileds were submitted
+        # Ensure fields were submitted
         if not request.form.get("username"):
             return apology("must provide username")
         elif not request.form.get("password"):
@@ -180,11 +180,9 @@ def register():
         elif not request.form.get("confirmation"):
             return apology("must provide confirmation")
         
-        username = request.form.get("username")
-
         # Ensure passwords were long enough and accurate
-        password1, password2 = request.form.get("password"), request.form.get(
-            "confirmation")
+        password1, password2, username = request.form.get("password"), request.form.get(
+            "confirmation"), request.form.get("username")
         mylogic.pass_compare(password1, password2)
         #mylogic.pass_parameters(password1)
 
