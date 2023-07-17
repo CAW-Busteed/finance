@@ -35,7 +35,8 @@ def test_pass_compare():
     assert mylogic.pass_compare(x,y) == True
 
 def test_pass_parameters():
-    assert mylogic.pass_parameters("password") == True
+    password = "password"
+    assert mylogic.pass_parameters(password) == True
 
 def test_username_avail():
     rows = []
