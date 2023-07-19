@@ -1,24 +1,25 @@
 import os
+import tempfile
 import mydb
 import pytest
 from cs50 import SQL
 from sqlalchemy.util import deprecations
 
-TEST_DB_FILENAME = 'finance-test.db'
-
 # get rid of gratuitous warning from sqlAlchemy
 deprecations.SILENCE_UBER_WARNING = True
 
 
-@pytest.fixture
-def dbfile(fn=TEST_DB_FILENAME):
-    if os.path.exists(fn): os.unlink(fn)
-    with open(fn, 'w') as f:
-        pass  # create empty file
-    return fn
+@pytest.fixture(scope="session")
+def dbfile():
+    db_fd, db_path = tempfile.mkstemp()
+
+    yield db_path
+
+    os.close(db_fd)
+    os.unlink(db_path)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def db(dbfile):
     db = SQL(f"sqlite:///{dbfile}")
 
