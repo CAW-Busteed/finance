@@ -2,3 +2,4 @@
 /flask_session/
 /tests/__pycache__/
 /finance-test.db
+/tests/.mypy_cache/

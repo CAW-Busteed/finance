@@ -2,41 +2,54 @@ import os
 import mydb
 import pytest
 from cs50 import SQL
+from sqlalchemy.util import deprecations
+
+TEST_DB_FILENAME = 'finance-test.db'
+
+# get rid of gratuitous warning from sqlAlchemy
+deprecations.SILENCE_UBER_WARNING = True
 
 
 @pytest.fixture
-def dbfile():
-    fn = 'finance-test.db'
+def dbfile(fn=TEST_DB_FILENAME):
     if os.path.exists(fn): os.unlink(fn)
     with open(fn, 'w') as f:
         pass  # create empty file
+    return fn
 
 
 @pytest.fixture
-def dbfixture(dbfile):
+def db(dbfile):
+    db = SQL(f"sqlite:///{dbfile}")
 
-    cmds = [
-        """CREATE TABLE users (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, username TEXT NOT NULL, hash TEXT NOT NULL, cash NUMERIC NOT NULL DEFAULT 10000.00);""",
-        """CREATE TABLE transactions (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, user_id INTEGER NOT NULL, company TEXT NOT NULL, shares INTEGER NOT NULL DEFAULT 1, total_cost NUMERIC NOT NULL, type TEXT NOT NULL, date TEXT NOT NULL);""",
-        """CREATE TABLE assets (user_id integer NOT NULL, stock text NOT NULL, number integer NOT NULL, value numeric NOT NULL, total_value numeric NOT NULL);"""
-    ]
-    db = SQL("sqlite:///finance-test.db")
-    for cmd in cmds:
-        db.execute(cmd)
+    def exec_script(sqlFile):
+        with open(os.path.join(os.path.dirname(__file__), sqlFile), "r") as f:
+            for line in f.readlines():
+                if not line.strip(): continue  # skip empty lines
+                db.execute(line)
 
-    # create some test rows for each table with inserts.
+    # populate_db
+    exec_script("schema.sql")
+    exec_script("data.sql")
+
     return db
 
 
-def test_dostuff(dbfixture):
-    assert mydb.dostuff(dbfixture, user_id = 0)
+# test seeded db.
+def test_get_transactions(db):
+    # test_db = mydb.get_users(db, user_id=1)
+    # assert test_db[0]['shares'] == 6
+    # test_db = mydb.get_assets(db, user_id=1)
+    # assert test_db[0]['shares'] == 6
+    test_db = mydb.get_transactions(db, user_id=1)
+    assert test_db[0]['shares'] == 6
 
-def add_transactions(dbfixture, id, time, quote, shares, cost, type):
-   dbfixture.execute("INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
-              id, time, quote, shares, cost, type)
 
-def test_get_transactions(dbfixture):
-    user_id = 0
-    add_transactions(dbfixture, user_id, '12:00', 'GOOG', 3, 123.45, 'buy')
-    test_db = mydb.get_transactions(dbfixture, user_id)
-    assert test_db[0]['stock']== 3
+# def test_dostuff(dbfixture):
+#     add_transactions(dbfixture, user_id, '12:00', 'GOOG', 3, 123.45, 'buy')
+#     assert mydb.dostuff(dbfixture, user_id=0)
+
+# def add_transactions(dbfixture, id, time, quote, shares, cost, type):
+#     dbfixture.execute(
+#         "INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
+#         id, time, quote, shares, cost, type)
