@@ -29,9 +29,8 @@ def db(dbfile):
                 if not line.strip(): continue  # skip empty lines
                 db.execute(line)
 
-    # populate_db
-    exec_script("schema.sql")
-    exec_script("data.sql")
+    exec_script("schema.sql")  # create tables
+    exec_script("data.sql")  # populate_db
 
     return db
 
