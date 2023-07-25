@@ -4,6 +4,7 @@ import mydb
 import pytest
 from cs50 import SQL
 from sqlalchemy.util import deprecations
+from datetime import datetime
 
 # get rid of gratuitous warning from sqlAlchemy
 deprecations.SILENCE_UBER_WARNING = True
@@ -45,11 +46,49 @@ def test_get_transactions(db):
     assert test_db[0]['shares'] == 6
 
 
-# def test_dostuff(dbfixture):
-#     add_transactions(dbfixture, user_id, '12:00', 'GOOG', 3, 123.45, 'buy')
-#     assert mydb.dostuff(dbfixture, user_id=0)
+def test_dostuff(db):
+    data, user_cash, gross_value = mydb.dostuff(db, user_id=1)
+    assert data[1]['stock'] == 'GOOG'
+    assert data[1]['value'] == 119.69
+    assert user_cash[0]['cash'] == 3953.65
+    assert gross_value[0]['total_value'] == 380.46
 
-# def add_transactions(dbfixture, id, time, quote, shares, cost, type):
-#     dbfixture.execute(
-#         "INSERT INTO transactions (user_id, date, company, shares, total_cost, type) VALUES (?, ?, ?, ?, ?, ?)",
-#         id, time, quote, shares, cost, type)
+def test_buy_variables():
+    stock_dic = {'price': 33.35}
+    share_num = 3
+    cost, time, buyorsell = mydb.buy_variables(stock_dic, share_num)
+    assert float("{:.2f}".format(cost)) == 100.05
+
+def test_buy_main(db):
+    rows = db.execute("SELECT * FROM users WHERE id = ?", 1)
+    now = datetime.now()
+    time = now.strftime("%d/%m/%Y %H:%M:%S")
+    asset = mydb.buy_main(db, rows, 1, time, 'goog', 3, 100.05, 'buy')
+    assert asset[0]['stock'] == 'GOOG'
+    assert asset[0]['number'] == 3
+
+def test_buy_update(db):
+    asset = []
+    stock_dic = {'price': 33.35}
+    cost = 100.05
+    test = mydb.buy_update(asset, db, 1, 'GOOG', 3, stock_dic, cost)
+    assert test == True
+
+def test_sell_variables(db):
+    stock_dic = {'price': 33.35}
+    rows, assets, cost, buyorsell, time = mydb.sell_variables(db, 1, 'GOOG', stock_dic, 3)
+
+def test_sell_main(db):
+    stock_dic = {'price': 33.35}
+    total_value = stock_dic["price"] * 2
+    test = mydb.sell_main(2, db, stock_dic, total_value, 1, 'GOOG')
+    assert test == True
+
+def test_sell_update(db):
+    now = datetime.now()
+    time = now.strftime("%d/%m/%Y %H:%M:%S")
+    cost = 33
+    rows = db.execute("SELECT * FROM users WHERE id = ?", 1)
+    gains = rows[0]["cash"] + cost
+    test = mydb.sell_update(db, 1, gains, time, 'GOOG', 2, cost, 'sell')
+    assert test == True
